@@ -4,16 +4,19 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
+# The container image runs `chmod 700 /config` and `chmod 600 /config/*` on every start.
+# The modes for the config directory and ddclient.conf match that, so that the next run
+# does not see a change and restart the service.
 - name: Ensure ddclient paths exist
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ item.path }}"
     state: directory
-    mode: "0750"
+    mode: "{{ item.mode }}"
     owner: "{{ ddclient_uid }}"
     group: "{{ ddclient_gid }}"
   with_items:
-    - "{{ ddclient_base_path }}"
-    - "{{ ddclient_config_path }}"
+    - {path: "{{ ddclient_base_path }}", mode: "0750"}
+    - {path: "{{ ddclient_config_path }}", mode: "0700"}
 
 - name: Ensure ddclient support file installed
   ansible.builtin.template:
@@ -30,7 +33,7 @@
   ansible.builtin.template:
     src: "{{ role_path }}/templates/ddclient.conf.j2"
     dest: "{{ ddclient_config_path }}/ddclient.conf"
-    mode: "0644"
+    mode: "0600"
     owner: "{{ ddclient_uid }}"
     group: "{{ ddclient_gid }}"
   register: ddclient_config_file_result
